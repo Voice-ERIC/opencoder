@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Qwen Coder Web</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;color:#333}
+.container{max-width:1200px;margin:0 auto;padding:20px}
+header{text-align:center;padding:40px 0;color:white}
+header h1{font-size:2.5rem;margin-bottom:10px}
+.main-content{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px}
+@media(max-width:768px){.main-content{grid-template-columns:1fr}}
+.card{background:white;border-radius:12px;padding:25px;box-shadow:0 10px 40px rgba(0,0,0,0.2)}
+.card h2{color:#667eea;margin-bottom:20px;font-size:1.5rem}
+.form-group{margin-bottom:15px}
+.form-group label{display:block;margin-bottom:5px;font-weight:600;color:#555}
+.form-group input,.form-group textarea{width:100%;padding:10px 15px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px}
+.form-group input:focus,.form-group textarea:focus{outline:none;border-color:#667eea}
+.form-group textarea{min-height:120px;resize:vertical}
+button{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;border:none;padding:12px 25px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
+button:hover{transform:translateY(-2px);box-shadow:0 5px 20px rgba(102,126,234,0.4)}
+button:disabled{opacity:0.6;cursor:not-allowed}
+.btn-secondary{background:#f0f0f0;color:#333}
+.result-box{background:#f8f9fa;border-radius:8px;padding:15px;margin-top:15px;max-height:400px;overflow-y:auto}
+.result-box pre{white-space:pre-wrap;word-wrap:break-word;font-family:monospace;font-size:13px}
+.task-list{list-style:none}
+.task-item{background:#f8f9fa;border-left:4px solid #667eea;padding:15px;margin-bottom:10px;border-radius:4px}
+.task-item h4{color:#667eea;margin-bottom:8px}
+.status-badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;margin-left:10px}
+.status-pending{background:#fff3cd;color:#856404}
+.tabs{display:flex;border-bottom:2px solid #e0e0e0;margin-bottom:20px}
+.tab{padding:10px 20px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px}
+.tab.active{color:#667eea;border-bottom-color:#667eea}
+.tab-content{display:none}
+.tab-content.active{display:block}
+.loading{display:inline-block;width:20px;height:20px;border:3px solid #f3f3f3;border-top:3px solid #667eea;border-radius:50%;animation:spin 1s linear infinite;margin-right:10px}
+@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+.prompt-card{background:#f8f9fa;border-radius:8px;padding:15px;margin-bottom:10px;cursor:pointer}
+.prompt-card:hover{background:#e9ecef}
+.prompt-card h4{color:#667eea;margin-bottom:5px}
+</style>
+</head>
+<body>
+<div class="container">
+<header><h1>Qwen Coder Web</h1><p>AI-Powered Task Decomposition & Multi-Prompt Management</p></header>
+<div class="tabs">
+<div class="tab active" data-tab="chat">Chat</div>
+<div class="tab" data-tab="tasks">Tasks</div>
+<div class="tab" data-tab="prompts">Prompts</div>
+<div class="tab" data-tab="gitea">Gitea</div>
+<div class="tab" data-tab="config">Config</div>
+</div>
+<div id="chat-tab" class="tab-content active">
+<div class="main-content">
+<div class="card">
+<h2>Chat with AI</h2>
+<div class="form-group"><label>Model</label><input type="text" id="chat-model" value="gpt-3.5-turbo"></div>
+<div class="form-group"><label>System Prompt</label><textarea id="system-prompt" placeholder="You are a helpful assistant..."></textarea></div>
+<div class="form-group"><label>Message</label><textarea id="user-message" placeholder="Enter your message..."></textarea></div>
+<button onclick="sendChat()" id="chat-btn">Send Message</button>
+</div>
+<div class="card"><h2>Response</h2><div class="result-box" id="chat-result"><pre>Responses will appear here...</pre></div></div>
+</div>
+</div>
+<div id="tasks-tab" class="tab-content">
+<div class="main-content">
+<div class="card">
+<h2>Decompose Task</h2>
+<div class="form-group"><label>Task Title</label><input type="text" id="task-title" placeholder="Enter task title..."></div>
+<div class="form-group"><label>Description</label><textarea id="task-description" placeholder="Provide context..."></textarea></div>
+<div class="form-group"><label>Max Subtasks</label><input type="number" id="max-subtasks" min="1" max="20" value="5"></div>
+<button onclick="decomposeTask()" id="decompose-btn">Decompose Task</button>
+</div>
+<div class="card"><h2>Subtasks</h2><div class="result-box"><ul class="task-list" id="subtask-list"><li class="task-item"><h4>Subtasks will appear here...</h4></li></ul></div></div>
+</div>
+</div>
+<div id="prompts-tab" class="tab-content">
+<div class="main-content">
+<div class="card">
+<h2>Create Prompt</h2>
+<div class="form-group"><label>Prompt Name</label><input type="text" id="prompt-name" placeholder="My Prompt"></div>
+<div class="form-group"><label>System Message</label><textarea id="prompt-system" placeholder="You are an expert..."></textarea></div>
+<div class="form-group"><label>Content (use {{variable}} for placeholders)</label><textarea id="prompt-content" placeholder="Hello {{name}}..."></textarea></div>
+<button onclick="createPrompt()">Create Prompt</button>
+</div>
+<div class="card"><h2>Saved Prompts</h2><div class="result-box" id="prompts-list"><p>Loading prompts...</p></div></div>
+</div>
+</div>
+<div id="gitea-tab" class="tab-content">
+<div class="card">
+<h2>Gitea Integration</h2>
+<div class="form-group"><label>Owner/Organization</label><input type="text" id="gitea-owner" placeholder="username"></div>
+<div class="form-group"><label>Repository</label><input type="text" id="gitea-repo" placeholder="repo-name"></div>
+<div style="display:flex;gap:10px;margin-top:15px"><button onclick="listGiteaIssues()">List Issues</button><button onclick="listGiteaPulls()" class="btn-secondary">List PRs</button></div>
+<div class="result-box" id="gitea-result" style="margin-top:20px"><pre>Gitea results here...</pre></div>
+</div>
+</div>
+<div id="config-tab" class="tab-content">
+<div class="card">
+<h2>API Configuration</h2>
+<div class="form-group"><label>API Endpoint</label><input type="text" id="api-endpoint" value="https://api.openai.com/v1"></div>
+<div class="form-group"><label>API Key</label><input type="password" id="api-key" placeholder="sk-..."></div>
+<div class="form-group"><label>Model</label><input type="text" id="model-name" value="gpt-3.5-turbo"></div>
+<div class="form-group"><label>Organization ID</label><input type="text" id="org-id" placeholder="org-..."></div>
+<div class="form-group"><label>Timeout (seconds)</label><input type="number" id="timeout" value="60"></div>
+<button onclick="saveConfig()">Save Configuration</button>
+<h3 style="margin-top:30px">Gitea Configuration</h3>
+<div class="form-group"><label>Gitea URL</label><input type="text" id="gitea-url" value="https://gitea.com"></div>
+<div class="form-group"><label>Gitea Token</label><input type="password" id="gitea-token"></div>
+<button onclick="saveGiteaConfig()" class="btn-secondary">Save Gitea Config</button>
+</div>
+</div>
+</div>
+<script>
+document.querySelectorAll('.tab').forEach(tab=>{tab.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));tab.classList.add('active');document.getElementById(tab.dataset.tab+'-tab').classList.add('active')})});
+loadPrompts();
+async function sendChat(){const btn=document.getElementById('chat-btn');btn.disabled=true;btn.innerHTML='<span class="loading"></span>Sending...';try{const messages=[];const sys=document.getElementById('system-prompt').value;if(sys)messages.push({role:'system',content:sys});messages.push({role:'user',content:document.getElementById('user-message').value});const resp=await fetch('/api/chat/completions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:document.getElementById('chat-model').value,messages,temperature:0.7,max_tokens:2048})});const data=await resp.json();document.getElementById('chat-result').innerHTML='<pre>'+escapeHtml(data.choices?.[0]?.message?.content||JSON.stringify(data))+'</pre>';}catch(e){document.getElementById('chat-result').innerHTML='<pre style="color:red">Error: '+e.message+'</pre>';}finally{btn.disabled=false;btn.textContent='Send Message'}}
+async function decomposeTask(){const btn=document.getElementById('decompose-btn');btn.disabled=true;btn.innerHTML='<span class="loading"></span>Decomposing...';try{const resp=await fetch('/api/tasks/decompose',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({task:document.getElementById('task-title').value,context:document.getElementById('task-description').value,max_subtasks:parseInt(document.getElementById('max-subtasks').value)})});const data=await resp.json();if(resp.ok){const list=document.getElementById('subtask-list');list.innerHTML='';data.task.subtasks.forEach((st,i)=>{list.innerHTML+='<li class="task-item"><h4>'+(i+1)+'. '+escapeHtml(st.title)+' <span class="status-badge status-pending">'+st.status+'</span></h4><p>'+escapeHtml(st.description)+'</p></li>';});}else{document.getElementById('task-result').innerHTML='<pre style="color:red">Error: '+JSON.stringify(data)+'</pre>';}}catch(e){document.getElementById('task-result').innerHTML='<pre style="color:red">Error: '+e.message+'</pre>';}finally{btn.disabled=false;btn.textContent='Decompose Task'}}
+async function loadPrompts(){try{const resp=await fetch('/api/prompts');const prompts=await resp.json();const container=document.getElementById('prompts-list');if(!prompts.length){container.innerHTML='<p>No saved prompts.</p>';return;}container.innerHTML='';prompts.forEach(p=>{const div=document.createElement('div');div.className='prompt-card';div.innerHTML='<h4>'+escapeHtml(p.name)+'</h4><p>'+escapeHtml(p.content.substring(0,80))+'...</p>';div.onclick=()=>{document.getElementById('system-prompt').value=p.system_message||'';document.getElementById('user-message').value=p.content;document.querySelector('[data-tab="chat"]').click()};container.appendChild(div);});}catch(e){document.getElementById('prompts-list').innerHTML='<p>Error loading prompts.</p>'}}
+async function createPrompt(){try{const resp=await fetch('/api/prompts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:document.getElementById('prompt-name').value,system_message:document.getElementById('prompt-system').value||null,content:document.getElementById('prompt-content').value})});if(resp.ok){alert('Prompt created!');document.getElementById('prompt-name').value='';document.getElementById('prompt-system').value='';document.getElementById('prompt-content').value='';loadPrompts();}else{alert('Failed to create prompt');}}catch(e){alert('Error: '+e.message)}}
+async function saveConfig(){try{const resp=await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api_endpoint:document.getElementById('api-endpoint').value,api_key:document.getElementById('api-key').value,model_name:document.getElementById('model-name').value,organization_id:document.getElementById('org-id').value||null,timeout_secs:parseInt(document.getElementById('timeout').value)})});alert(resp.ok?'Configuration saved!':'Failed to save');}catch(e){alert('Error: '+e.message)}}
+async function saveGiteaConfig(){try{const resp=await fetch('/api/gitea/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({base_url:document.getElementById('gitea-url').value,token:document.getElementById('gitea-token').value})});alert(resp.ok?'Gitea config saved!':'Failed to save');}catch(e){alert('Error: '+e.message)}}
+async function listGiteaIssues(){const owner=document.getElementById('gitea-owner').value,repos=document.getElementById('gitea-repo').value;if(!owner||!repos){alert('Enter owner and repo');return;}try{const resp=await fetch('/api/gitea/repos/'+owner+'/'+repos+'/issues');const issues=await resp.json();const box=document.getElementById('gitea-result');if(!issues.length){box.innerHTML='<pre>No issues found.</pre>';return;}let html='<ul class="task-list">';issues.forEach(i=>{html+='<li class="task-item"><h4>#'+i.number+': '+escapeHtml(i.title)+'</h4><p>'+escapeHtml(i.body||'No description')+'</p><span class="status-badge status-pending">'+i.state+'</span></li>';});box.innerHTML=html+'</ul>';}catch(e){document.getElementById('gitea-result').innerHTML='<pre style="color:red">Error: '+e.message+'</pre>'}}
+async function listGiteaPulls(){const owner=document.getElementById('gitea-owner').value,repos=document.getElementById('gitea-repo').value;if(!owner||!repos){alert('Enter owner and repo');return;}try{const resp=await fetch('/api/gitea/repos/'+owner+'/'+repos+'/pulls');const pulls=await resp.json();const box=document.getElementById('gitea-result');if(!pulls.length){box.innerHTML='<pre>No PRs found.</pre>';return;}let html='<ul class="task-list">';pulls.forEach(p=>{html+='<li class="task-item"><h4>#'+p.number+': '+escapeHtml(p.title)+'</h4><p>'+escapeHtml(p.body||'No description')+'</p><span class="status-badge status-pending">'+p.state+'</span></li>';});box.innerHTML=html+'</ul>';}catch(e){document.getElementById('gitea-result').innerHTML='<pre style="color:red">Error: '+e.message+'</pre>'}}
+function escapeHtml(t){const d=document.createElement('div');d.textContent=t;return d.innerHTML}
+</script>
+</body>
+</html>
